@@ -1,3 +1,4 @@
+
 "use client";
 
 import Header from "@/component_front/Header";
@@ -6,7 +7,7 @@ import "./globals.css";
 import Footer from "@/component_front/Footer";
 import Link from "next/link";
 import { buttonStyles } from "@/components/tailgrids/core/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useContext,
@@ -26,19 +27,27 @@ export type GlobalsData = {
   setCarts: Dispatch<SetStateAction<Product[]>>;
 };
 
-export const globalsDataContext = createContext<GlobalsData | null>(null);
+export const globalsDataContext =
+  createContext<GlobalsData | null>(null);
 
-// ใช้ hook นี้ในคอมโพเนนต์อื่นแทน useContext(globalsDataContext) ตรง ๆ
 export function useGlobalsData() {
   const ctx = useContext(globalsDataContext);
+
   if (!ctx) {
-    throw new Error("useGlobalsData must be used within RootLayout");
+    throw new Error(
+      "useGlobalsData must be used within RootLayout"
+    );
   }
+
   return ctx;
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: LayoutProps<"/">) {
   const pathname = usePathname();
+  const router = useRouter();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [carts, setCarts] = useState<Product[]>([]);
 
@@ -51,61 +60,97 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       });
   }, []);
 
-  useEffect(() => {
-    console.log(products);
-  }, [products]);
-
   const value = useMemo(
-    () => ({ products, setProducts, carts, setCarts }),
-    [products, setProducts, carts, setCarts],
+    () => ({
+      products,
+      setProducts,
+      carts,
+      setCarts,
+    }),
+    [products, carts]
   );
+
+  const menuItems = [
+    { name: "Home", href: "/" },
+    { name: "Animation", href: "/animations" },
+    { name: "Calculator", href: "/calculator" },
+    { name: "Todos", href: "/todos" },
+    { name: "Products", href: "/products" },
+    { name: "Carts", href: "/carts" },
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("credential");
+    window.dispatchEvent(new Event("credential:updated"));
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <globalsDataContext.Provider value={value}>
       <html lang="en">
         <body>
           <Header />
+
           <UserInfo />
-          <nav className="mt-4 flex justify-center gap-6 px-4">
-            <Link
-              href="/calculator"
-              className={buttonStyles({
-                appearance: pathname === "/calculator" ? "fill" : "outline",
-                variant: "primary",
-              })}
-            >
-              Calculator
-            </Link>
 
-            <Link
-              href="/todos"
-              className={buttonStyles({
-                appearance: pathname === "/todos" ? "fill" : "outline",
-                variant: "primary",
-              })}
-            >
-              Todos
-            </Link>
+          <nav className="mt-4 flex flex-wrap justify-center items-center gap-4 px-4">
+            {menuItems.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
 
-            <div className="relative">
-              <Link
-                href="/products"
-                className={buttonStyles({
-                  appearance: pathname === "/products" ? "fill" : "outline",
-                  variant: "primary",
-                })}
-              >
-                Products
-              </Link>
-              <Badge
-                size={"sm"}
-                className="absolute -right-2 -top-2 bg-red-600 text-white"
-              >
-                {products.length}
-              </Badge>
-            </div>
+              return (
+                <div
+                  key={item.name}
+                  className="relative"
+                >
+                  <Link
+                    href={item.href}
+                    className={buttonStyles({
+                      appearance: isActive
+                        ? "fill"
+                        : "outline",
+                      variant: "primary",
+                    })}
+                  >
+                    {item.name}
+                  </Link>
+
+                  {item.name === "Products" && (
+                    <Badge
+                      size="sm"
+                      className="absolute -right-2 -top-2 bg-red-600 text-white"
+                    >
+                      {products.length}
+                    </Badge>
+                  )}
+
+                  {item.name === "Carts" && (
+                    <Badge
+                      size="sm"
+                      className="absolute -right-2 -top-2 bg-red-600 text-white"
+                    >
+                      {carts.length}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-red-400 px-4 py-2 text-red-600 hover:bg-red-50"
+            >
+              Logout
+            </button>
           </nav>
+
           <main>{children}</main>
+
           <Footer />
         </body>
       </html>
