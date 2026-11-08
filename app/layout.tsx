@@ -5,19 +5,19 @@ import UserInfo from "@/component_front/UserInfo";
 import "./globals.css";
 import Footer from "@/component_front/Footer";
 import Link from "next/link";
-import { Button, buttonStyles } from "@/components/tailgrids/core/button";
-import { usePathname, useRouter } from "next/navigation";
+import { buttonStyles } from "@/components/tailgrids/core/button";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { fetchProducts, Product } from "./data/products";
 import { Badge } from "@/components/tailgrids/core/badge";
-import { doLogout } from "@/utils/login";
 
 export type GlobalsData = {
   products: Product[];
@@ -39,7 +39,6 @@ export function useGlobalsData() {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   const pathname = usePathname();
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [carts, setCarts] = useState<Product[]>([]);
 
@@ -56,39 +55,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     console.log(products);
   }, [products]);
 
-  const handleLogout = () => {
-    doLogout(router, "/login");
-  };
+  const value = useMemo(
+    () => ({ products, setProducts, carts, setCarts }),
+    [products, setProducts, carts, setCarts],
+  );
 
   return (
-    <globalsDataContext.Provider
-      value={{ products, setProducts, carts, setCarts }}
-    >
-      <html>
+    <globalsDataContext.Provider value={value}>
+      <html lang="en">
         <body>
           <Header />
           <UserInfo />
-          <nav className="flex gap-4 justify-center mt-4">
-            <Link
-              href="/"
-              className={buttonStyles({
-                appearance: pathname === "/" ? "fill" : "outline",
-                variant: "primary",
-              })}
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/animetions"
-              className={buttonStyles({
-                appearance: pathname === "/animetions" ? "fill" : "outline",
-                variant: "primary",
-              })}
-            >
-              Animetion
-            </Link>
-
+          <nav className="mt-4 flex justify-center gap-6 px-4">
             <Link
               href="/calculator"
               className={buttonStyles({
@@ -126,33 +104,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 {products.length}
               </Badge>
             </div>
-
-            <div className="relative">
-              <Link
-                href="/carts"
-                className={buttonStyles({
-                  appearance: pathname === "/carts" ? "fill" : "outline",
-                  variant: "primary",
-                })}
-              >
-                Carts
-              </Link>
-              <Badge
-                size={"sm"}
-                className="absolute -right-2 -top-2 bg-red-600 text-white"
-              >
-                {carts.length}
-              </Badge>
-            </div>
-
-            <Button
-              appearance={"outline"}
-              variant="danger"
-              className="ml-1"
-              onClick={() => handleLogout()}
-            >
-              Logout
-            </Button>
           </nav>
           <main>{children}</main>
           <Footer />
